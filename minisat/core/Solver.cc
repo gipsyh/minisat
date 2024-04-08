@@ -19,12 +19,11 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 **************************************************************************************************/
 
 #include <math.h>
-
+#include <iostream>
 #include "minisat/mtl/Alg.h"
 #include "minisat/mtl/Sort.h"
 #include "minisat/utils/System.h"
 #include "minisat/core/Solver.h"
-
 using namespace Minisat;
 
 //=================================================================================================
@@ -101,6 +100,8 @@ Solver::Solver() :
   , conflict_budget    (-1)
   , propagation_budget (-1)
   , asynch_interrupt   (false)
+  , pbucket_sum        (0)
+  , pbucket_num        (0)
 {}
 
 
@@ -256,6 +257,7 @@ Lit Solver::pickBranchLit()
         if (value(next) == l_Undef && decision[next])
             rnd_decisions++; }
 
+    auto start = time_start();
     // Activity based decision:
     while (next == var_Undef || value(next) != l_Undef || !decision[next])
         if (order_heap.empty()){
@@ -263,6 +265,8 @@ Lit Solver::pickBranchLit()
             break;
         }else
             next = order_heap.removeMin();
+
+    bucket_time += time_end(start);
 
     // Choose polarity based on different polarity modes (global or per-variable):
     if (next == var_Undef)
@@ -840,7 +844,11 @@ lbool Solver::solve_()
 {
     model.clear();
     conflict.clear();
+    solving_time = 0;
+    bucket_time = 0;
     if (!ok) return l_False;
+    
+    auto start = time_start();
 
     solves++;
 
@@ -880,6 +888,21 @@ lbool Solver::solve_()
         ok = false;
 
     cancelUntil(0);
+    solving_time += time_end(start);
+
+    // std::cout << "bucket_time" << bucket_time << std::endl;
+    // std::cout << "solving_time" << solving_time << std::endl;
+    double bucketp = double(bucket_time) / double(solving_time);
+    
+    // std::cout << "bucketp" << bucketp << std::endl;
+    if (!std::isnan(bucketp)) {
+        pbucket_num += 1;
+        pbucket_sum += bucketp;
+    }
+
+    // std::cout << "solving" << solving_time << std::endl;
+    // std::cout << "pbucket" << pbucket_sum / pbucket_num << std::endl;
+
     return status;
 }
 
