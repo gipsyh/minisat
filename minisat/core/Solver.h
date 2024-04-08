@@ -26,6 +26,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "minisat/mtl/Alg.h"
 #include "minisat/mtl/IntMap.h"
 #include "minisat/utils/Options.h"
+#include "minisat/utils/System.h"
 #include "minisat/core/SolverTypes.h"
 
 
@@ -145,6 +146,12 @@ public:
 
     int       learntsize_adjust_start_confl;
     double    learntsize_adjust_inc;
+
+    long        bucket_time;
+    long     solving_time;
+
+    double    pbucket_sum;
+    int       pbucket_num;
 
     // Statistics: (read-only member variable)
     //
@@ -304,7 +311,10 @@ inline CRef Solver::reason(Var x) const { return vardata[x].reason; }
 inline int  Solver::level (Var x) const { return vardata[x].level; }
 
 inline void Solver::insertVarOrder(Var x) {
-    if (!order_heap.inHeap(x) && decision[x]) order_heap.insert(x); }
+    auto start = time_start();
+    if (!order_heap.inHeap(x) && decision[x]) order_heap.insert(x);
+    bucket_time += time_end(start);
+}
 
 inline void Solver::varDecayActivity() { var_inc *= (1 / var_decay); }
 inline void Solver::varBumpActivity(Var v) { varBumpActivity(v, var_inc); }

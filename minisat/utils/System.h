@@ -59,14 +59,25 @@ static inline double Minisat::cpuTime(void) { return (double)clock() / CLOCKS_PE
 
 #else
 #include <sys/time.h>
+#include <sys/times.h>
 #include <sys/resource.h>
 #include <unistd.h>
+#include <time.h>
+#include <chrono>
 
 static inline double Minisat::cpuTime(void) {
     struct rusage ru;
     getrusage(RUSAGE_SELF, &ru);
     return (double)ru.ru_utime.tv_sec + (double)ru.ru_utime.tv_usec / 1000000; }
 
+static inline std::chrono::high_resolution_clock::time_point time_start() {
+    return std::chrono::high_resolution_clock::now();
+}
+
+static inline long time_end(std::chrono::high_resolution_clock::time_point start) {
+    auto end = std::chrono::high_resolution_clock::now();
+    return std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
+}
 #endif
 
 #endif
